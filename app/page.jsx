@@ -583,7 +583,7 @@ export default function Home() {
                     setKmStartOfMonth(parsed);
                   }
                 }}
-                placeholder="Required"
+                placeholder="Odometer"
               />
               <span style={{ fontSize: '0.75rem', color: !kmStartOfMonth ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: 600 }}>km</span>
             </div>
