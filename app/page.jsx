@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { format, addMonths, subMonths, endOfMonth, startOfMonth } from 'date-fns';
+import { sk } from 'date-fns/locale';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -493,7 +494,7 @@ export default function Home() {
       const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), ride.day);
       return {
         'Dátum': format(date, 'dd/MM/yyyy'),
-        'Den': format(date, 'EEEE'),
+        'Den': format(date, 'EEEE', { locale: sk }),
         'Čas odjazdu': ride.from,
         'Čas príchodu': ride.to,
         'Miesto odjazdu': ride.pointA,
