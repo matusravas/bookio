@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { format, addMonths, subMonths, endOfMonth, startOfMonth } from 'date-fns';
-import { sk } from 'date-fns/locale';
+import { sk, enUS } from 'date-fns/locale';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -14,12 +14,14 @@ import {
   RefreshCw,
   Gauge,
   Route,
-  Home as HomeIcon
+  Home as HomeIcon,
+  Globe
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import SmartTimeInput from '../components/SmartTimeInput';
 import LocationAutocomplete from '../components/LocationAutocomplete';
 import SimpleAutocomplete from '../components/SimpleAutocomplete';
+import { translations } from '../lib/translations';
 
 export default function Home() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -35,11 +37,15 @@ export default function Home() {
   const [isEditingHome, setIsEditingHome] = useState(false);
   const [activeFieldId, setActiveFieldId] = useState(null);
   const [storedPurposes, setStoredPurposes] = useState([]);
+  const [language, setLanguage] = useState('sk');
   const calendarRef = useRef(null);
   const homeRef = useRef(null);
   const homeEditRef = useRef(null);
   const isLoadingMonthRef = useRef(false);
   const saveTimeoutRef = useRef(null);
+
+  const t = translations[language];
+  const dateLocale = language === 'sk' ? sk : enUS;
 
   const currentMonthKey = format(currentMonth, 'yyyy-MM');
 
@@ -468,7 +474,7 @@ export default function Home() {
   const exportExcel = () => {
 
     const monthStr = format(currentMonth, 'yyyy-MM');
-    const monthName = format(currentMonth, 'MMMM yyyy');
+    const monthName = format(currentMonth, 'LLLL yyyy', { locale: dateLocale });
     
     // Sort chronologically for export: by day, then by "from" time
     const exportRides = [];
@@ -491,18 +497,17 @@ export default function Home() {
       const kmAfter = kmBefore + (parseFloat(ride.distanceKm) || 0);
       runningKm = kmAfter;
 
-      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), ride.day);
       return {
-        'Dátum': format(date, 'dd/MM/yyyy'),
-        'Den': format(date, 'EEEE', { locale: sk }),
-        'Čas odjazdu': ride.from,
-        'Čas príchodu': ride.to,
-        'Miesto odjazdu': ride.pointA,
-        'Miesto príchodu': ride.pointB,
-        'Účel cesty': ride.purpose || '',
-        'Vzdialenosť (km)': ride.distanceKm,
-        'Stav tachometra pred jazdou': kmBefore.toFixed(1),
-        'Stav tachometra po jazde': kmAfter.toFixed(1)
+        [t.exportExcel.date]: format(date, 'dd/MM/yyyy'),
+        [t.exportExcel.day]: format(date, 'EEEE', { locale: dateLocale }),
+        [t.exportExcel.depTime]: ride.from,
+        [t.exportExcel.arrTime]: ride.to,
+        [t.exportExcel.depPlace]: ride.pointA,
+        [t.exportExcel.arrPlace]: ride.pointB,
+        [t.exportExcel.purpose]: ride.purpose || '',
+        [t.exportExcel.distance]: ride.distanceKm,
+        [t.exportExcel.kmBefore]: kmBefore.toFixed(1),
+        [t.exportExcel.kmAfter]: kmAfter.toFixed(1)
       };
     });
 
@@ -528,7 +533,7 @@ export default function Home() {
     XLSX.utils.book_append_sheet(wb, ws, monthName);
 
     // Generate Excel file and download
-    XLSX.writeFile(wb, `rides_${monthStr}.xlsx`);
+    XLSX.writeFile(wb, `${t.exportExcel.filename}_${monthStr}.xlsx`);
   };
 
   const lastDay = endOfMonth(currentMonth).getDate();
@@ -538,8 +543,26 @@ export default function Home() {
     <div className="animate-fade-in" style={{ paddingBottom: '5rem' }}>
       <header style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-          <h1 className="gradient-text" style={{ fontSize: '2rem' }}>Ride Evidence</h1>
+          <h1 className="gradient-text" style={{ fontSize: '2rem' }}>{t.rideEvidence}</h1>
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            {/* Language Switcher */}
+            <button 
+              className="glass"
+              onClick={() => setLanguage(l => l === 'sk' ? 'en' : 'sk')}
+              style={{
+                padding: '0.4rem 0.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer',
+                borderColor: 'var(--accent-secondary)'
+              }}
+              title="Switch Language (SK/EN)"
+            >
+              <Globe size={16} style={{ color: 'var(--accent-secondary)' }} />
+              <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{language.toUpperCase()}</span>
+            </button>
+
             <div 
               ref={homeRef}
               className="glass" 
@@ -555,7 +578,7 @@ export default function Home() {
                 boxShadow: homeAddress ? '0 0 15px rgba(16, 185, 129, 0.2)' : 'none'
               }}
               onClick={() => setIsEditingHome(!isEditingHome)}
-              title={homeAddress ? `Home: ${homeAddress}` : "Set Home Address"}
+              title={homeAddress ? `${t.home}: ${homeAddress}` : t.setHomeTooltip}
             >
               <MapPin size={18} style={{ color: homeAddress ? 'var(--success)' : 'var(--text-secondary)' }} />
             </div>
@@ -584,17 +607,17 @@ export default function Home() {
                     setKmStartOfMonth(parsed);
                   }
                 }}
-                placeholder="Odometer"
+                placeholder={t.odometer}
               />
-              <span style={{ fontSize: '0.75rem', color: !kmStartOfMonth ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: 600 }}>km</span>
+              <span style={{ fontSize: '0.75rem', color: !kmStartOfMonth ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: 600 }}>{t.miles}</span>
             </div>
             <button 
               className="primary" 
               onClick={exportExcel}
               style={{ opacity: !kmStartOfMonth ? 0.5 : 1, cursor: !kmStartOfMonth ? 'not-allowed' : 'pointer' }}
-              title={!kmStartOfMonth ? "Please fill KM Start first" : "Export to Excel"}
+              title={!kmStartOfMonth ? t.exportFillKm : t.exportTooltip}
             >
-              <Download size={18} /> Export
+              <Download size={18} /> {t.export}
             </button>
           </div>
         </div>
@@ -617,7 +640,7 @@ export default function Home() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)' }}>
               <MapPin size={18} />
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap' }}>SET HOME</span>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{t.setHome}</span>
             </div>
             <div style={{ flex: 1 }}>
               <LocationAutocomplete 
@@ -631,7 +654,7 @@ export default function Home() {
                 }}
                 onFocus={() => setActiveFieldId('home-address')}
                 onBlur={() => setActiveFieldId(null)}
-                placeholder="Search address..."
+                placeholder={t.placeholderAddress}
               />
             </div>
           </div>
@@ -659,7 +682,7 @@ export default function Home() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, justifyContent: 'center' }}>
                 <CalendarIcon size={18} style={{ color: isCalendarOpen ? 'var(--accent-primary)' : 'var(--text-secondary)' }} />
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>
-                  {format(currentMonth, 'MMMM yyyy')}
+                  {format(currentMonth, 'LLLL yyyy', { locale: dateLocale })}
                 </h2>
               </div>
               <button className="secondary" style={{ padding: '0.3rem' }} onClick={(e) => { e.stopPropagation(); setCurrentMonth(addMonths(currentMonth, 1)); setActiveDay(1); }}>
@@ -670,7 +693,7 @@ export default function Home() {
             {isCalendarOpen && (
               <div className="calendar-popover" style={{ top: '65px', left: 0, right: 0, margin: '0 auto', maxWidth: '400px' }}>
                 <div className="calendar-header-days">
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                  {t.daysShort.map(day => (
                     <div key={day} className="calendar-header-day">{day}</div>
                   ))}
                 </div>
@@ -682,7 +705,7 @@ export default function Home() {
                   
                   {daysArray.map(day => {
                     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-                    const dayName = format(date, 'EEE');
+                    const dayName = format(date, 'EEE', { locale: dateLocale });
                     return (
                       <div 
                         key={day} 
@@ -705,10 +728,10 @@ export default function Home() {
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <div className="glass" style={{ height: '56px', padding: '0 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', border: '1px solid rgba(var(--accent-primary-rgb), 0.3)', background: 'rgba(var(--accent-primary-rgb), 0.05)' }}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>MONTH TOTAL</span>
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>{t.monthTotal}</span>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
                   <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-primary)' }}>{monthlyTotalKm.toFixed(1)}</span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>km</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{t.miles}</span>
                   {/* <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.5, marginLeft: '0.5rem' }}>Start: {kmStartOfMonth}</span> */}
                 </div>
               </div>
@@ -716,10 +739,10 @@ export default function Home() {
 
             <div className="glass" style={{ height: '56px', padding: '0 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', border: '1px solid rgba(var(--accent-secondary-rgb), 0.3)', background: 'rgba(var(--accent-secondary-rgb), 0.05)' }}>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>DAY TOTAL</span>
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 700, letterSpacing: '0.05em' }}>{t.dayTotal}</span>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
                   <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-secondary)' }}>{activeDayTotalKm.toFixed(1)}</span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>km</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{t.miles}</span>
                 </div>
               </div>
             </div>
@@ -734,10 +757,10 @@ export default function Home() {
               <span style={{ background: 'var(--accent-primary)', width: '40px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {activeDay}
               </span>
-              {format(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), activeDay), 'EEEE, MMMM do')}
+              {format(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), activeDay), 'EEEE, d. MMMM', { locale: dateLocale })}
             </h3>
             <button className="secondary" onClick={() => addRide(activeDay)} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <Plus size={18} /> Add Ride
+              <Plus size={18} /> {t.addRide}
             </button>
           </div>
 
@@ -745,7 +768,7 @@ export default function Home() {
             {(!rides[activeDay] || rides[activeDay].length === 0) && (
               <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.5 }}>
                 <Car size={48} style={{ margin: '0 auto 1rem' }} />
-                <p>No rides for this day. Click "Add Ride" to begin.</p>
+                <p>{t.noRides}</p>
               </div>
             )}
 
@@ -779,7 +802,7 @@ export default function Home() {
                       {/* Row 1: Departure */}
                       <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-end', position: 'relative', zIndex: activeFieldId === `ride-${ride.id}-pointA` ? 100 : 2 }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '80px', flexShrink: 0 }}>
-                          <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>DEPARTURE</label>
+                          <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>{t.departure}</label>
                           <SmartTimeInput 
                             id={`from-${ride.id}`}
                             value={ride.from} 
@@ -789,7 +812,7 @@ export default function Home() {
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '18px' }}>
-                            <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>START POINT</label>
+                            <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>{t.startPoint}</label>
                           </div>
                           <LocationAutocomplete 
                             id={`pointA-${ride.id}`}
@@ -799,7 +822,7 @@ export default function Home() {
                             onHomeClick={homeAddress ? () => updateRide(activeDay, ride.id, 'pointA', homeAddress, homeCoords) : null}
                             onFocus={() => setActiveFieldId(`ride-${ride.id}-pointA`)}
                             onBlur={() => setActiveFieldId(null)}
-                            placeholder="Departure point..."
+                            placeholder={t.placeholderAddress}
                           />
                         </div>
                       </div>
@@ -810,7 +833,7 @@ export default function Home() {
                           <div style={{ width: '80px', flexShrink: 0 }}></div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '18px' }}>
-                              <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>VIA (WAYPOINT {index + 1})</label>
+                              <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>{t.waypointLabel} {index + 1}</label>
                               <button 
                                 onClick={() => updateRide(activeDay, ride.id, 'removeWaypoint', index)}
                                 style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.7rem', padding: '0', opacity: 0.7 }}
@@ -824,7 +847,7 @@ export default function Home() {
                               onHomeClick={homeAddress ? () => updateRide(activeDay, ride.id, 'updateWaypoint', { index, name: homeAddress, coords: homeCoords }) : null}
                               onFocus={() => setActiveFieldId(`waypoint-${ride.id}-${wp.id}`)}
                               onBlur={() => setActiveFieldId(null)}
-                              placeholder="Stopover point..."
+                              placeholder={t.placeholderAddress}
                             />
                           </div>
                         </div>
@@ -841,13 +864,13 @@ export default function Home() {
                             opacity: 0.5,
                             marginLeft: '1.25rem'
                           }}
-                        >+ Add Waypoint</button>
+                        >{t.addWaypoint}</button>
                       </div>
 
                       {/* Row 2: Arrival */}
                       <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-end', position: 'relative', zIndex: activeFieldId === `ride-${ride.id}-pointB` ? 100 : 1 }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '80px', flexShrink: 0 }}>
-                          <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>ARRIVAL</label>
+                          <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>{t.arrival}</label>
                           <SmartTimeInput 
                             id={`to-${ride.id}`}
                             value={ride.to} 
@@ -856,7 +879,7 @@ export default function Home() {
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '18px' }}>
-                            <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>END POINT</label>
+                            <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>{t.endPoint}</label>
                           </div>
                           <LocationAutocomplete 
                             id={`pointB-${ride.id}`}
@@ -866,7 +889,7 @@ export default function Home() {
                             onHomeClick={homeAddress ? () => updateRide(activeDay, ride.id, 'pointB', homeAddress, homeCoords) : null}
                             onFocus={() => setActiveFieldId(`ride-${ride.id}-pointB`)}
                             onBlur={() => setActiveFieldId(null)}
-                            placeholder="Destination point..."
+                            placeholder={t.placeholderAddress}
                           />
                         </div>
                       </div>
@@ -876,7 +899,7 @@ export default function Home() {
                         <div style={{ paddingLeft: '92.5px', position: 'relative', zIndex: activeFieldId === `ride-${ride.id}-purpose` ? 100 : 1 }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>PURPOSE</label>
+                              <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>{t.travelPurpose}</label>
                               <button 
                                 onClick={() => {
                                   setShowPurposeForRide(prev => ({ ...prev, [ride.id]: false }));
@@ -889,7 +912,7 @@ export default function Home() {
                                 value={ride.purpose || ''}
                                 onChange={(val) => updateRide(activeDay, ride.id, 'purpose', val)}
                                 suggestions={storedPurposes}
-                                placeholder="e.g., Client meeting..."
+                                placeholder={t.placeholderPurpose}
                                 onFocus={() => setActiveFieldId(`ride-${ride.id}-purpose`)}
                                 onBlur={() => setActiveFieldId(null)}
                                 onSaveNew={handleAddPurpose}
@@ -919,7 +942,7 @@ export default function Home() {
                               borderRadius: '0.75rem'
                             }}
                           >
-                            <RefreshCw size={12} /> Add Return
+                            <RefreshCw size={12} /> {t.addReturn}
                           </button>
                         )}
                         {!showPurposeForRide[ride.id] && (
@@ -927,12 +950,12 @@ export default function Home() {
                             className="secondary"
                             onClick={() => setShowPurposeForRide(prev => ({ ...prev, [ride.id]: true }))}
                             style={{ padding: '0.35rem 0.6rem', fontSize: '0.65rem', borderStyle: 'dashed', opacity: 0.7 }}
-                          >+ Add Purpose</button>
+                          >{t.addPurpose}</button>
                         )}
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(var(--accent-secondary-rgb), 0.1)', padding: '0.35rem 0.6rem', borderRadius: '0.75rem', border: '1px solid rgba(var(--accent-secondary-rgb), 0.2)' }}>
-                        <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800 }}>DISTANCE</label>
+                        <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800 }}>{t.distance}</label>
                         <input 
                           type="text" 
                           inputMode="decimal"
@@ -982,7 +1005,7 @@ export default function Home() {
                         borderRadius: '0 0 0.4rem 0.4rem',
                         letterSpacing: '0.05em',
                         zIndex: 5
-                      }}>RETURN RIDE</div>
+                      }}>{t.returnRideKeywords}</div>
 
                       {/* Header Row: Delete Button for Return */}
                       <div style={{ position: 'absolute', top: '0.6rem', right: '0.6rem', zIndex: 10 }}>
@@ -999,7 +1022,7 @@ export default function Home() {
                         {/* Row 1: Departure (Return) */}
                         <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-end', position: 'relative', zIndex: activeFieldId === `ride-${childRide.id}-pointA` ? 100 : 2 }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '80px', flexShrink: 0 }}>
-                            <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>DEPARTURE</label>
+                            <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>{t.departure}</label>
                             <SmartTimeInput 
                               id={`from-${childRide.id}`}
                               value={childRide.from} 
@@ -1008,7 +1031,7 @@ export default function Home() {
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '18px', paddingRight: '28px' }}>
-                              <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>START POINT</label>
+                              <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>{t.startPoint}</label>
                             </div>
                             <LocationAutocomplete 
                               id={`pointA-${childRide.id}`}
@@ -1018,7 +1041,7 @@ export default function Home() {
                               onHomeClick={homeAddress ? () => updateRide(activeDay, childRide.id, 'pointA', homeAddress, homeCoords) : null}
                               onFocus={() => setActiveFieldId(`ride-${childRide.id}-pointA`)}
                               onBlur={() => setActiveFieldId(null)}
-                              placeholder="Departure point..."
+                              placeholder={t.placeholderAddress}
                             />
                           </div>
                         </div>
@@ -1029,7 +1052,7 @@ export default function Home() {
                             <div style={{ width: '80px', flexShrink: 0 }}></div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1 }}>
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '18px' }}>
-                                <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>VIA (WAYPOINT {index + 1})</label>
+                                <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>{t.waypointLabel} {index + 1}</label>
                                 <button 
                                   onClick={() => updateRide(activeDay, childRide.id, 'removeWaypoint', index)}
                                   style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.7rem', padding: '0', opacity: 0.7 }}
@@ -1043,7 +1066,7 @@ export default function Home() {
                                 onHomeClick={homeAddress ? () => updateRide(activeDay, childRide.id, 'updateWaypoint', { index, name: homeAddress, coords: homeCoords }) : null}
                                 onFocus={() => setActiveFieldId(`waypoint-${childRide.id}-${wp.id}`)}
                                 onBlur={() => setActiveFieldId(null)}
-                                placeholder="Stopover point..."
+                                placeholder={t.placeholderAddress}
                               />
                             </div>
                           </div>
@@ -1060,13 +1083,13 @@ export default function Home() {
                               opacity: 0.5,
                               marginLeft: '1.25rem'
                             }}
-                          >+ Add Waypoint</button>
+                          >{t.addWaypoint}</button>
                         </div>
 
                         {/* Row 2: Arrival (Return) */}
                         <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'flex-end', position: 'relative', zIndex: activeFieldId === `ride-${childRide.id}-pointB` ? 100 : 1 }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '80px', flexShrink: 0 }}>
-                            <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>ARRIVAL</label>
+                            <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>{t.arrival}</label>
                             <SmartTimeInput 
                               id={`to-${childRide.id}`}
                               value={childRide.to} 
@@ -1075,7 +1098,7 @@ export default function Home() {
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '18px' }}>
-                              <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>END POINT</label>
+                              <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>{t.endPoint}</label>
                             </div>
                             <LocationAutocomplete 
                               id={`pointB-${childRide.id}`}
@@ -1085,7 +1108,7 @@ export default function Home() {
                               onHomeClick={homeAddress ? () => updateRide(activeDay, childRide.id, 'pointB', homeAddress, homeCoords) : null}
                               onFocus={() => setActiveFieldId(`ride-${childRide.id}-pointB`)}
                               onBlur={() => setActiveFieldId(null)}
-                              placeholder="Destination point..."
+                              placeholder={t.placeholderAddress}
                             />
                           </div>
                         </div>
@@ -1096,7 +1119,7 @@ export default function Home() {
                         <div style={{ paddingLeft: '92.5px', position: 'relative', zIndex: activeFieldId === `ride-${childRide.id}-purpose` ? 100 : 1 }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>PURPOSE</label>
+                              <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>{t.travelPurpose}</label>
                               <button 
                                 onClick={() => {
                                   setShowPurposeForRide(prev => ({ ...prev, [childRide.id]: false }));
@@ -1109,7 +1132,7 @@ export default function Home() {
                                 value={childRide.purpose || ''}
                                 onChange={(val) => updateRide(activeDay, childRide.id, 'purpose', val)}
                                 suggestions={storedPurposes}
-                                placeholder="e.g., Client meeting..."
+                                placeholder={t.placeholderPurpose}
                                 onFocus={() => setActiveFieldId(`ride-${childRide.id}-purpose`)}
                                 onBlur={() => setActiveFieldId(null)}
                                 onSaveNew={handleAddPurpose}
@@ -1131,7 +1154,7 @@ export default function Home() {
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(var(--accent-secondary-rgb), 0.1)', padding: '0.3rem 0.5rem', borderRadius: '0.6rem', border: '1px solid rgba(var(--accent-secondary-rgb), 0.2)' }}>
-                          <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800 }}>DISTANCE</label>
+                          <label style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 800 }}>{t.distance}</label>
                           <input 
                             type="text" 
                             inputMode="decimal"
@@ -1176,16 +1199,16 @@ export default function Home() {
                   width: '100%'
                 }}
               >
-                <Plus size={18} /> Add Another Ride
+                <Plus size={18} /> {t.addAnotherRide}
               </button>
             )}
           </div>
         </div>
       </main>
 
-      <footer style={{ marginTop: '3rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', opacity: 0.5 }}>
-        Total KM this month: {Math.round(monthlyTotalKm)} km
-      </footer>
+      {/* <footer style={{ marginTop: '3rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', opacity: 0.5 }}>
+        {t.totalKmMonth}: {Math.round(monthlyTotalKm)} {t.miles}
+      </footer> */}
     </div>
   );
 }

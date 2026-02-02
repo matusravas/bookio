@@ -762,9 +762,9 @@ const App = () => {
         </div>
       </main>
 
-      <footer style={{ marginTop: '3rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', opacity: 0.5 }}>
+      {/* <footer style={{ marginTop: '3rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', opacity: 0.5 }}>
         Total KM this month: {allRidesSorted.reduce((sum, r) => sum + (parseFloat(r.distanceKm) || 0), 0).toFixed(1)} km
-      </footer>
+      </footer> */}
     </div>
   );
 };
