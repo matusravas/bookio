@@ -542,10 +542,10 @@ export default function Home() {
   return (
     <div className="animate-fade-in" style={{ paddingBottom: '5rem' }}>
       <header style={{ marginBottom: '2rem' }}>
+        {/* Header Top Row: Title & Settings */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
           <h1 className="gradient-text" style={{ fontSize: '2rem' }}>{t.rideEvidence}</h1>
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            {/* Language Switcher */}
             <button 
               className="glass"
               onClick={() => setLanguage(l => l === 'sk' ? 'en' : 'sk')}
@@ -582,44 +582,94 @@ export default function Home() {
             >
               <MapPin size={18} style={{ color: homeAddress ? 'var(--success)' : 'var(--text-secondary)' }} />
             </div>
-
-            <div className="glass" style={{ 
-              padding: '0.4rem 0.75rem', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.5rem',
-              border: !kmStartOfMonth ? '2px solid var(--danger)' : '1px solid var(--border-color)',
-              background: !kmStartOfMonth ? 'rgba(239, 68, 68, 0.05)' : 'transparent'
-            }}>
-              <Gauge size={16} style={{ color: !kmStartOfMonth ? 'var(--danger)' : 'var(--accent-primary)' }} />
-              <input 
-                type="text" 
-                inputMode="decimal"
-                className="input-base" 
-                style={{ width: '80px', border: 'none', background: 'transparent', padding: '0.25rem', fontSize: '1rem', fontWeight: 600 }}
-                value={kmStartOfMonth === 0 ? '' : kmStartOfMonth}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9.]/g, '');
-                  if (val === '' || val === '.') {
-                    setKmStartOfMonth(0);
-                  } else {
-                    const parsed = parseFloat(val) || 0;
-                    setKmStartOfMonth(parsed);
-                  }
-                }}
-                placeholder={t.odometer}
-              />
-              <span style={{ fontSize: '0.75rem', color: !kmStartOfMonth ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: 600 }}>{t.miles}</span>
-            </div>
-            <button 
-              className="primary" 
-              onClick={exportExcel}
-              style={{ opacity: !kmStartOfMonth ? 0.5 : 1, cursor: !kmStartOfMonth ? 'not-allowed' : 'pointer' }}
-              title={!kmStartOfMonth ? t.exportFillKm : t.exportTooltip}
-            >
-              <Download size={18} /> {t.export}
-            </button>
           </div>
+        </div>
+
+        {/* Action Bar: Odometer & Export (Elegant Design) */}
+        <div className="glass" style={{ 
+          padding: '1rem 1.5rem', 
+          marginBottom: '2rem', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          border: '1px solid var(--border-color)',
+          background: 'rgba(255, 255, 255, 0.02)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ 
+              background: !kmStartOfMonth ? 'rgba(239, 68, 68, 0.1)' : 'rgba(var(--accent-primary-rgb), 0.1)', 
+              padding: '0.6rem', 
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.3s ease'
+            }}>
+              <Gauge size={20} style={{ color: !kmStartOfMonth ? 'var(--danger)' : 'var(--accent-primary)' }} />
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+               <label style={{ 
+                 fontSize: '0.65rem', 
+                 color: !kmStartOfMonth ? 'var(--danger)' : 'var(--text-secondary)', 
+                 fontWeight: 700, 
+                 letterSpacing: '0.05em',
+                 marginBottom: '0.1rem',
+                 transition: 'color 0.3s ease'
+               }}>
+                 {t.odometer.toUpperCase()} {format(currentMonth, 'MMMM', { locale: dateLocale }).toUpperCase()}
+               </label>
+               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+                <input 
+                  type="text" 
+                  inputMode="decimal"
+                  className="input-base" 
+                  style={{ 
+                    width: '100px', 
+                    border: 'none',
+                    outline: 'none',
+                    boxShadow: 'none',
+                    background: 'transparent', 
+                    padding: '0', 
+                    fontSize: '1.25rem', 
+                    fontWeight: 700,
+                    color: 'var(--text-primary)',
+                    borderBottom: !kmStartOfMonth ? '1px dashed var(--danger)' : 'none',
+                    borderRadius: 0
+                  }}
+                  value={kmStartOfMonth === 0 ? '' : kmStartOfMonth}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                    if (val === '' || val === '.') {
+                      setKmStartOfMonth(0);
+                    } else {
+                      const parsed = parseFloat(val) || 0;
+                      setKmStartOfMonth(parsed);
+                    }
+                  }}
+                  placeholder="0"
+                />
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{t.miles}</span>
+               </div>
+            </div>
+          </div>
+
+          <button 
+            className="primary" 
+            onClick={exportExcel}
+            style={{ 
+              opacity: !kmStartOfMonth ? 0.6 : 1, 
+              cursor: !kmStartOfMonth ? 'not-allowed' : 'pointer',
+              padding: '0.6rem 1.25rem',
+              fontSize: '0.9rem',
+              background: !kmStartOfMonth ? 'var(--bg-color)' : 'var(--primary)',
+              border: !kmStartOfMonth ? '1px solid var(--border-color)' : 'none',
+              color: !kmStartOfMonth ? 'var(--text-secondary)' : 'white'
+            }}
+            title={!kmStartOfMonth ? t.exportFillKm : t.exportTooltip}
+          >
+            <Download size={18} /> {t.export}
+          </button>
         </div>
 
         {isEditingHome && (
