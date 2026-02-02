@@ -546,22 +546,6 @@ export default function Home() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
           <h1 className="gradient-text" style={{ fontSize: '2rem' }}>{t.rideEvidence}</h1>
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <button 
-              className="glass"
-              onClick={() => setLanguage(l => l === 'sk' ? 'en' : 'sk')}
-              style={{
-                padding: '0.4rem 0.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                cursor: 'pointer',
-                borderColor: 'var(--accent-secondary)'
-              }}
-              title="Switch Language (SK/EN)"
-            >
-              <Globe size={16} style={{ color: 'var(--accent-secondary)' }} />
-              <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{language.toUpperCase()}</span>
-            </button>
 
             <div 
               ref={homeRef}
@@ -582,6 +566,22 @@ export default function Home() {
             >
               <MapPin size={18} style={{ color: homeAddress ? 'var(--success)' : 'var(--text-secondary)' }} />
             </div>
+                <button 
+                  className="glass"
+                  onClick={() => setLanguage(l => l === 'sk' ? 'en' : 'sk')}
+                  style={{
+                    padding: '0.4rem 0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    cursor: 'pointer',
+                    borderColor: 'var(--accent-secondary)'
+                  }}
+                  title="Switch Language (SK/EN)"
+                >
+                  <Globe size={16} style={{ color: 'var(--accent-secondary)' }} />
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{language.toUpperCase()}</span>
+                </button>
           </div>
         </div>
 
@@ -805,9 +805,9 @@ export default function Home() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
             <h3 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <span style={{ background: 'var(--accent-primary)', width: '40px', height: '40px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {activeDay}
+                {activeDay}.
               </span>
-              {format(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), activeDay), 'EEEE, d. MMMM', { locale: dateLocale })}
+              {format(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), activeDay), 'EEEE', { locale: dateLocale })}
             </h3>
             <button className="secondary" onClick={() => addRide(activeDay)} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
               <Plus size={18} /> {t.addRide}
